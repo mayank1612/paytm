@@ -54,6 +54,21 @@ userSchema.methods.validatePassword = async function (candidatePassword) {
 // Create a model from the schema
 const User = mongoose.model("User", userSchema);
 
+// Accounts
+
+const accountSchema = new mongoose.Schema({
+  userId: {
+    ref: "User",
+    type: mongoose.Schema.Types.ObjectId,
+  },
+  balance: {
+    type: Number,
+  },
+});
+
+const Account = mongoose.model("Account", accountSchema);
+
 module.exports = {
   User,
+  Account,
 };

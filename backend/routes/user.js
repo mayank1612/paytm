@@ -1,8 +1,9 @@
 const { Router } = require("express");
 const { z } = require("zod");
-const { User } = require("../db");
+const { User, Account } = require("../db");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../config");
+const { authMiddleware } = require("../middleware");
 
 const router = Router();
 
@@ -43,9 +44,16 @@ router.post("/signup", async (req, res) => {
       const hashedPassword = await user.createHash(password);
       user.password_hash = hashedPassword;
 
-      console.log({ user });
-
       user.save();
+
+      // create account with dummy balance
+      const account = new Account({
+        userId: user._id,
+        balance: Math.random() * 10000 + 1,
+      });
+
+      account.save();
+
       const token = jwt.sign({ userId: user.id }, JWT_SECRET);
 
       res
@@ -105,6 +113,65 @@ router.post("/signin", async (req, res) => {
       message: "Invalid input",
     });
   }
+});
+
+router.put("/", authMiddleware, async (req, res) => {
+  const updateBody = z.object({
+    password: z.string().optional(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+  });
+
+  const { success } = updateBody.safeParse(req.body);
+  const { firstName, lastName, password } = req.body;
+  const userId = req.userId;
+
+  if (firstName || lastName || password) {
+    const response = await User.updateOne(
+      { _id: userId },
+      {
+        firstName: firstName,
+        lastName: lastName,
+        password_hash: await new User().createHash(password),
+      }
+    );
+
+    if (response.acknowledged) {
+      res.status(200).json({ message: "User updated successfully" });
+    } else {
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  } else {
+    res.status(403).json({ mesasge: "Invalid request" });
+  }
+});
+
+router.get("/bulk", async (req, res) => {
+  const { filter } = req.query;
+
+  const users = await User.find({
+    $or: [
+      {
+        firstName: {
+          $regex: filter,
+        },
+      },
+      {
+        lastName: {
+          $regex: filter,
+        },
+      },
+    ],
+  });
+
+  res.json({
+    user: users.map((user) => ({
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      _id: user._id,
+    })),
+  });
 });
 
 module.exports = router;
