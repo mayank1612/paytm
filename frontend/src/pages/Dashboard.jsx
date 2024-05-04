@@ -4,7 +4,7 @@ import { Users } from "../components/Users";
 
 const Dashboard = () => {
   return (
-    <div className="p-2">
+    <div>
       <Appbar />
       <Balance value={1500} />
       <Users />
