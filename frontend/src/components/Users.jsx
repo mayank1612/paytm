@@ -1,15 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./Button";
+import axios from "axios";
+import { BACKEND_BASE_URL } from "../assets/constants";
+import { useNavigate } from "react-router-dom";
 
 export const Users = () => {
-  // Replace with backend call
-  const [users, setUsers] = useState([
-    {
-      firstName: "Harkirat",
-      lastName: "Singh",
-      _id: 1,
-    },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    axios
+      .get(BACKEND_BASE_URL + "/user/bulk?filter=" + filter)
+      .then((response) => {
+        setUsers(response.data.user);
+      });
+  }, [filter]);
 
   return (
     <div className="p-4">
@@ -19,6 +24,9 @@ export const Users = () => {
           type="text"
           placeholder="Search users..."
           className="w-full px-2 py-1 border rounded border-slate-200"
+          onChange={(e) => {
+            setFilter(e.target.value);
+          }}
         ></input>
       </div>
       <div>
@@ -31,7 +39,9 @@ export const Users = () => {
 };
 
 function User({ user }) {
-  const { firstName, lastName } = user;
+  const navigate = useNavigate();
+
+  const { firstName, lastName, username } = user;
 
   return (
     <div className="flex justify-between my-4">
@@ -47,7 +57,12 @@ function User({ user }) {
       </div>
 
       <div className="flex items-center">
-        <Button label={"Send Money"} />
+        <Button
+          label={"Send Money"}
+          onClick={() => {
+            navigate(`/send?username=${username}&name=${firstName}`);
+          }}
+        />
       </div>
     </div>
   );

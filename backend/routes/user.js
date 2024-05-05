@@ -13,7 +13,7 @@ router.post("/signup", async (req, res) => {
 
   const userSchema = z.object({
     username: z.string().email(),
-    firstName: z.string().min(3),
+    firstName: z.string().min(1),
     lastName: z.string().min(1),
     password: z.string().min(3),
   });
@@ -148,17 +148,18 @@ router.put("/", authMiddleware, async (req, res) => {
 
 router.get("/bulk", async (req, res) => {
   const { filter } = req.query;
+  const regexFilter = new RegExp(filter || "", "i");
 
   const users = await User.find({
     $or: [
       {
         firstName: {
-          $regex: filter,
+          $regex: regexFilter,
         },
       },
       {
         lastName: {
-          $regex: filter,
+          $regex: regexFilter,
         },
       },
     ],
